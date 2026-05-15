@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P - PeerJS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.0/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            min-width: 120px;
+        }
+
+        select, input[type="file"], input[type="text"], button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            flex: 1;
+            max-width: 300px;
+            cursor: pointer;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .classroom {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .computer {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            position: relative;
+        }
+
+        .computer:hover:not(.offline) {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .computer.teacher {
+            background: linear-gradient(135deg, #f3e2c9 0%, #f5a83c 100%);
+        }
+
+        .computer.offline {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .computer.my-computer {
+            border-color: #22db6f;
+            box-shadow: 0 0 20px rgba(30, 92, 56, 0.998);
+            animation: pulse 2s infinite;
+        }
+
+        .computer.connected {
+            background: linear-gradient(135deg, #84fa2a 0%, #0fad88 100%);
+        }
+
+        .computer.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+            }
+        }
+
+        .computer-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .computer-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .computer-status {
+            font-size: 11px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #48bb78;
+            color: white;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .messages {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .message {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .message-content {
+            color: #333;
+        }
+
+        .message.success {
+            border-left-color: #48bb78;
+        }
+
+        .message.error {
+            border-left-color: #f56565;
+        }
+
+        .message.chat {
+            border-left-color: #9f7aea;
+            background: #faf5ff;
+        }
+
+        .message.broadcast {
+            border-left-color: #ed8936;
+            background: #fffaf0;
+        }
+
+        .message-from {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+        }
+
+        .file-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .info-panel {
+            background: #e6f3ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-panel h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-panel p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .connection-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .connection-badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏫 Tantermi P2P</h1>
+        <div class="subtitle">PeerJS - P2P kommunikáció</div>
+
+        <div class="info-panel">
+            <h3>📚 Használat</h3>
+            <p>
+                1. Válaszd ki a saját számítógépedet és inicializáld<br>
+                2. Kattints egy másik ONLINE gépre a csatlakozáshoz (több géphez is csatlakozhatsz!)<br>
+                3. Írj üzenetet vagy válassz fájlt<br>
+                4. Használd a "Csoportos üzenet" gombot minden csatlakozott géphez küldéshez<br>
+            </p>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <label>Válassz gépet:</label>
+                <select id="myComputer">
+                    <option value="">-- Válassz számítógépet --</option>
+                </select>
+                <button id="initBtn">Inicializálás</button>
+                <span id="myStatus" style="color: #666; font-size: 14px;"></span>
+            </div>
+
+            <div class="control-row">
+                <label>Csatlakozott:</label>
+                <div class="connection-list" id="connectionList">
+                    <span style="color: #999;">Nincs csatlakozás</span>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <label>Szöveges üzenet:</label>
+                <input type="text" id="messageInput" placeholder="Írj egy üzenetet..." disabled style="flex: 1; max-width: 500px;">
+                <button id="sendMessageBtn" disabled>Üzenet küldése</button>
+                <button id="broadcastBtn" disabled>Csoportos üzenet</button>
+            </div>
+
+            <div class="control-row">
+                <label>Fájl küldése:</label>
+                <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" disabled>
+                <button id="sendFileBtn" disabled>Fájl küldése</button>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 15px; color: #333;">💻 Tanterem (Kattints a gépekre a csatlakozáshoz!)</h2>
+        <div class="classroom" id="classroom"></div>
+
+        <h2 style="margin-bottom: 15px; color: #333;">📨 Üzenetek & Fájlok</h2>
+        <div class="messages" id="messages"></div>
+    </div>
+
+    <script>
+        const computers = [
+            { id: 'teacher', name: 'Tanári gép', type: 'teacher', peerId: 'classroom-teacher' },
+            ...Array.from({ length: 18 }, (_, i) => ({
+                id: `student${i + 1}`,
+                name: `Diák ${i + 1}`,
+                type: 'student',
+                peerId: `classroom-student${i + 1}`
+            }))
+        ];
+
+        let myPeer = null;
+        let myComputerId = null;
+        let connections = {};
+        let onlineComputers = new Set();
+
+        function initUI() {
+            const classroom = document.getElementById('classroom');
+            const myComputerSelect = document.getElementById('myComputer');
+
+            computers.forEach(comp => {
+                const div = document.createElement('div');
+                div.className = `computer ${comp.type} offline`;
+                div.dataset.id = comp.id;
+                div.innerHTML = `
+                    <div class="computer-icon">${comp.type === 'teacher' ? '👨‍🏫' : '👨‍🎓'}</div>
+                    <div class="computer-name">${comp.name}</div>
+                    <div class="computer-status">Offline</div>
+                `;
+                
+                div.addEventListener('click', () => handleComputerClick(comp.id));
+                classroom.appendChild(div);
+
+                const option = document.createElement('option');
+                option.value = comp.id;
+                option.textContent = comp.name;
+                myComputerSelect.appendChild(option);
+            });
+        }
+
+        function handleComputerClick(compId) {
+            if (!myPeer || compId === myComputerId) return;
+            
+            const comp = computers.find(c => c.id === compId);
+            if (!onlineComputers.has(compId)) {
+                addMessage(`❌ ${comp.name} offline állapotban van`, 'error');
+                return;
+            }
+
+            if (connections[compId]) {
+                addMessage(`ℹ️ Már csatlakozva vagy ${comp.name} géphez`, 'info');
+                return;
+            }
+
+            connectToComputer(compId);
+        }
+
+        function addMessage(content, type = 'info') {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`;
+            msg.innerHTML = `
+                <div class="message-time">${new Date().toLocaleTimeString('hu-HU')}</div>
+                <div class="message-content">${content}</div>
+            `;
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function updateComputerStatus(compId, status) {
+            const computerEl = document.querySelector(`[data-id="${compId}"]`);
+            const statusEl = computerEl.querySelector('.computer-status');
+            
+            computerEl.classList.remove('offline', 'connected', 'my-computer', 'selected');
+            
+            if (status === 'online') {
+                onlineComputers.add(compId);
+                statusEl.textContent = 'Online';
+            } else if (status === 'connected') {
+                computerEl.classList.add('connected');
+                statusEl.textContent = 'Csatlakozva';
+            } else if (status === 'my-computer') {
+                computerEl.classList.add('my-computer');
+                statusEl.textContent = 'Te vagy itt';
+                onlineComputers.add(compId);
+            } else {
+                computerEl.classList.add('offline');
+                statusEl.textContent = 'Offline';
+                onlineComputers.delete(compId);
+            }
+        }
+
+        function updateConnectionList() {
+            const listEl = document.getElementById('connectionList');
+            const connectedIds = Object.keys(connections);
+            
+            if (connectedIds.length === 0) {
+                listEl.innerHTML = '<span style="color: #999;">Nincs csatlakozás</span>';
+            } else {
+                listEl.innerHTML = connectedIds.map(id => {
+                    const comp = computers.find(c => c.id === id);
+                    return `<div class="connection-badge">${comp.name}</div>`;
+                }).join('');
+            }
+
+            const hasConnections = connectedIds.length > 0;
+            document.getElementById('messageInput').disabled = !hasConnections;
+            document.getElementById('sendMessageBtn').disabled = !hasConnections;
+            document.getElementById('broadcastBtn').disabled = !hasConnections;
+            document.getElementById('fileInput').disabled = !hasConnections;
+            document.getElementById('sendFileBtn').disabled = !hasConnections;
+        }
+
+        document.getElementById('initBtn').addEventListener('click', () => {
+            const selectedComp = document.getElementById('myComputer').value;
+            if (!selectedComp) {
+                addMessage('❌ Válassz ki egy számítógépet!', 'error');
+                return;
+            }
+
+            const comp = computers.find(c => c.id === selectedComp);
+            myComputerId = selectedComp;
+            
+            myPeer = new Peer(comp.peerId);
+
+            myPeer.on('open', (id) => {
+                addMessage(`✅ Sikeres inicializálás! Te most: ${comp.name}`, 'success');
+                updateComputerStatus(myComputerId, 'my-computer');
+                
+                document.getElementById('myComputer').disabled = true;
+                document.getElementById('initBtn').disabled = true;
+                document.getElementById('myStatus').textContent = `✅ Online: ${comp.name}`;
+                
+                // Próbálj csatlakozni az összes többi online géphez (discovery)
+                discoverOnlineComputers();
+            });
+
+            myPeer.on('connection', (conn) => {
+                handleIncomingConnection(conn);
+            });
+
+            myPeer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    addMessage(`❌ Ez a gép már használatban van másik ablakban!`, 'error');
+                } else {
+                    addMessage(`❌ Hiba: ${err.message}`, 'error');
+                }
+            });
+        });
+
+        function discoverOnlineComputers() {
+            computers.forEach(comp => {
+                if (comp.id !== myComputerId) {
+                    // Próbáljunk csatlakozni discovery célból
+                    const testConn = myPeer.connect(comp.peerId, { metadata: { discovery: true } });
+                    
+                    testConn.on('open', () => {
+                        updateComputerStatus(comp.id, 'online');
+                        testConn.close(); // Zárjuk be a discovery kapcsolatot
+                    });
+                    
+                    testConn.on('error', () => {
+                        // Offline marad
+                    });
+                }
+            });
+        }
+
+        function connectToComputer(targetId) {
+            const targetComp = computers.find(c => c.id === targetId);
+            addMessage(`🔄 Csatlakozás ${targetComp.name} géphez...`);
+            
+            const conn = myPeer.connect(targetComp.peerId, { metadata: { discovery: false } });
+            setupConnection(conn, targetId);
+        }
+
+        function handleIncomingConnection(conn) {
+            // Ha discovery kapcsolat, ne kezeljük
+            if (conn.metadata && conn.metadata.discovery) {
+                conn.on('open', () => {
+                    const fromComp = computers.find(c => c.peerId === conn.peer);
+                    if (fromComp) {
+                        updateComputerStatus(fromComp.id, 'online');
+                    }
+                    conn.close();
+                });
+                return;
+            }
+
+            const fromComp = computers.find(c => c.peerId === conn.peer);
+            if (fromComp) {
+                addMessage(`📞 Bejövő kapcsolat: ${fromComp.name}`);
+                setupConnection(conn, fromComp.id);
+            }
+        }
+
+        function setupConnection(conn, targetId) {
+            const targetComp = computers.find(c => c.id === targetId);
+            
+            conn.on('open', () => {
+                connections[targetId] = conn;
+                updateComputerStatus(targetId, 'connected');
+                addMessage(`✅ Kapcsolat létrejött ${targetComp.name} géppel!`, 'success');
+                updateConnectionList();
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'file') {
+                    receiveFile(data, targetId);
+                } else if (data.type === 'message') {
+                    receiveMessage(data, targetId);
+                } else if (data.type === 'broadcast') {
+                    receiveBroadcast(data, targetId);
+                }
+            });
+
+            conn.on('close', () => {
+                addMessage(`❌ Kapcsolat lezárva ${targetComp.name} géppel`);
+                delete connections[targetId];
+                updateComputerStatus(targetId, 'online');
+                updateConnectionList();
+            });
+
+            conn.on('error', (err) => {
+                console.error('Connection error:', err);
+            });
+        }
+
+        document.getElementById('sendMessageBtn').addEventListener('click', sendTextMessage);
+        
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendTextMessage();
+            }
+        });
+
+        function sendTextMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                addMessage('❌ Írj be egy üzenetet!', 'error');
+                return;
+            }
+
+            const connectedCount = Object.keys(connections).length;
+            if (connectedCount === 0) {
+                addMessage('❌ Nincs csatlakozott gép!', 'error');
+                return;
+            }
+
+            const data = {
+                type: 'message',
+                text: message,
+                from: myComputerId
+            };
+
+            // Küldés az első csatlakozott géphez
+            const firstConnId = Object.keys(connections)[0];
+            connections[firstConnId].send(data);
+            
+            const myName = computers.find(c => c.id === myComputerId)?.name;
+            const targetName = computers.find(c => c.id === firstConnId)?.name;
+            addChatMessage(message, myName, `📤 Te → ${targetName}`);
+            messageInput.value = '';
+        }
+
+        document.getElementById('broadcastBtn').addEventListener('click', () => {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                addMessage('❌ Írj be egy üzenetet!', 'error');
+                return;
+            }
+
+            const connectedCount = Object.keys(connections).length;
+            if (connectedCount === 0) {
+                addMessage('❌ Nincs csatlakozott gép!', 'error');
+                return;
+            }
+
+            const data = {
+                type: 'broadcast',
+                text: message,
+                from: myComputerId
+            };
+
+            let sentCount = 0;
+            Object.values(connections).forEach(conn => {
+                try {
+                    conn.send(data);
+                    sentCount++;
+                } catch (err) {
+                    console.error('Broadcast error:', err);
+                }
+            });
+
+            const myName = computers.find(c => c.id === myComputerId)?.name;
+            addBroadcastMessage(message, myName, sentCount, 'sent');
+            messageInput.value = '';
+        });
+
+        document.getElementById('sendFileBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                addMessage('❌ Válassz ki egy fájlt!', 'error');
+                return;
+            }
+
+            const connectedCount = Object.keys(connections).length;
+            if (connectedCount === 0) {
+                addMessage('❌ Nincs csatlakozott gép!', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = {
+                    type: 'file',
+                    name: file.name,
+                    fileType: file.type,
+                    data: e.target.result
+                };
+
+                // Broadcast a fájlt minden kapcsolatnak
+                let sentCount = 0;
+                Object.values(connections).forEach(conn => {
+                    try {
+                        conn.send(data);
+                        sentCount++;
+                    } catch (err) {
+                        console.error('File send error:', err);
+                    }
+                });
+
+                addMessage(`📤 Fájl elküldve ${sentCount} géphez: ${file.name}`, 'success');
+                fileInput.value = '';
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        function addChatMessage(text, fromName, direction) {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message chat';
+            msg.innerHTML = `
+                <div class="message-time">${new Date().toLocaleTimeString('hu-HU')}</div>
+                <div class="message-from">${direction}</div>
+                <div class="message-content">${text}</div>
+            `;
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addBroadcastMessage(text, fromName, count, direction = 'received') {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message broadcast';
+            msg.innerHTML = `
+                <div class="message-time">${new Date().toLocaleTimeString('hu-HU')}</div>
+                <div class="message-from">${direction === 'sent' ? `📢 Csoportos üzenet (${count} címzett)` : '📢 ' + fromName + ' (csoportos)'}</div>
+                <div class="message-content">${text}</div>
+            `;
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function receiveMessage(data, fromId) {
+            const fromName = computers.find(c => c.id === fromId)?.name || 'Ismeretlen';
+            addChatMessage(data.text, fromName, `💬 ${fromName} → Te`);
+        }
+
+        function receiveBroadcast(data, fromId) {
+            const fromName = computers.find(c => c.id === fromId)?.name || 'Ismeretlen';
+            addBroadcastMessage(data.text, fromName, 0, 'received');
+        }
+
+        function receiveFile(data, fromId) {
+            const fromName = computers.find(c => c.id === fromId)?.name || 'Ismeretlen';
+            addMessage(`📥 Fájl érkezett: <strong>${data.name}</strong> (${fromName} géptől)`, 'success');
+
+            if (data.fileType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = data.data;
+                img.alt = data.name;
+                img.onclick = () => window.open(data.data, '_blank');
+                
+                const preview = document.createElement('div');
+                preview.className = 'file-preview';
+                preview.appendChild(img);
+                
+                document.querySelector('.messages').lastChild.appendChild(preview);
+            } else {
+                const link = document.createElement('a');
+                link.href = data.data;
+                link.download = data.name;
+                link.textContent = '⬇️ Letöltés';
+                link.style.display = 'inline-block';
+                link.style.marginTop = '10px';
+                link.style.padding = '5px 10px';
+                link.style.background = '#667eea';
+                link.style.color = 'white';
+                link.style.borderRadius = '5px';
+                link.style.textDecoration = 'none';
+                
+                document.querySelector('.messages').lastChild.appendChild(link);
+            }
+        }
+
+        initUI();
+        addMessage('👋 Üdvözlünk! Nyisd meg több ablakban, inicializálj különböző gépeket, és kezdj el kommunikálni!');
+        addMessage('💡 Tipp: Először inicializáld a gépeket külön ablakokban, majd kattints az ONLINE gépekre a csatlakozáshoz!', 'info');
+    </script>
+</body>
+</html>

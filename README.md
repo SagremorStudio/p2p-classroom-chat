@@ -136,5 +136,9 @@ Nincs központi szerver – minden adat \*\*közvetlenül a gépek között\*\* 
 
 \- Egyszerű, kattintásos csatlakozás
 
+📜 Licenc
+MIT License — szabadon felhasználható, módosítható, terjeszthető, oktatási és személyes célokra.
 
 
+📜 Licenc
+MIT License — szabadon felhasználható, módosítható, terjeszthető, oktatási és személyes célokra.

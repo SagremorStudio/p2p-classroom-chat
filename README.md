@@ -138,7 +138,3 @@ Nincs központi szerver – minden adat \*\*közvetlenül a gépek között\*\* 
 
 📜 Licenc
 MIT License — szabadon felhasználható, módosítható, terjeszthető, oktatási és személyes célokra.
-
-
-📜 Licenc
-MIT License — szabadon felhasználható, módosítható, terjeszthető, oktatási és személyes célokra.

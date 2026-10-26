@@ -1,5 +1,8 @@
 \# 🔧 P2P Osztálytermi Kommunikációs Rendszer
 
+<img width="441" height="470" alt="shareclass" src="https://github.com/user-attachments/assets/24a98105-d4a0-4bbe-9e14-ab6a29b92ddf" />
+
+
 
 
 Ez a projekt egy \*\*valós Peer‑to‑Peer (P2P)\*\* kapcsolaton alapuló kommunikációs rendszer, amely akár \*\*19 számítógép\*\* (1 tanári + 18 diák) közötti valós idejű üzenet- és fájlmegosztást tesz lehetővé.
